@@ -113,3 +113,30 @@ export async function updateTask(req, res, next) {
     next(error);
   }
 }
+
+export async function deleteTask(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    // Controllo se la task esiste
+    const [existing] = await pool.query("SELECT id FROM tasks WHERE id = ?", [id]);
+
+    // Validazione
+    if (existing.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Task non trovata",
+      });
+    }
+
+    // Elimino la task
+    await pool.query("DELETE FROM tasks WHERE id = ?", [id]);
+
+    res.json({
+      success: true,
+      message: "Task eliminata con successo",
+    });
+  } catch (error) {
+    next(error);
+  }
+}
