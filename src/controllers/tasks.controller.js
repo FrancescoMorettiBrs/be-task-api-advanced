@@ -1,5 +1,11 @@
 import pool from "../db/connection.js";
 
+// Helper /:id
+async function findTaskById(id) {
+  const [rows] = await pool.query("SELECT * FROM tasks WHERE id = ?", [id]);
+  return rows[0] || null;
+}
+
 // GET
 export async function getAllTasks(req, res, next) {
   try {
@@ -10,8 +16,6 @@ export async function getAllTasks(req, res, next) {
       data: rows,
     });
   } catch (error) {
-    console.error("Errore nel recupero delle task", error.message);
-
     next(error);
   }
 }
@@ -21,10 +25,10 @@ export async function getTaskById(req, res, next) {
   try {
     const { id } = req.params;
 
-    const [rows] = await pool.query("SELECT * FROM tasks WHERE id = ?", [id]);
+    const task = await findTaskById(id);
 
     // Se non esiste una task con quell'id
-    if (rows.length === 0) {
+    if (!task) {
       return res.status(404).json({
         success: false,
         message: "Task non trovata",
@@ -34,7 +38,7 @@ export async function getTaskById(req, res, next) {
     // Se trovo la task
     res.json({
       success: true,
-      data: rows[0],
+      data: task,
     });
   } catch (err) {
     next(err);
@@ -54,7 +58,6 @@ export async function createTask(req, res, next) {
       });
     }
 
-    // Query
     const [result] = await pool.query("INSERT INTO tasks (title, status, priority) VALUES (?, ?, ?)", [title.trim(), status, priority]);
 
     // Recupero la task che ho creato
@@ -84,10 +87,10 @@ export async function updateTask(req, res, next) {
     }
 
     // Controllo se la task esiste
-    const [existing] = await pool.query("SELECT * FROM tasks WHERE id = ?", [id]);
+    const task = await findTaskById(id);
 
     // Qui faccio un controllo
-    if (existing.length === 0) {
+    if (!task) {
       return res.status(404).json({
         success: false,
         message: "Task non trovata",
@@ -95,19 +98,18 @@ export async function updateTask(req, res, next) {
     }
 
     // Uso i valori esistenti come fallback
-    const updatedTitle = title ?? existing[0].title;
-    const updatedStatus = status ?? existing[0].status;
-    const updatedPriority = priority ?? existing[0].priority;
+    const updatedTitle = title ?? task.title;
+    const updatedStatus = status ?? task.status;
+    const updatedPriority = priority ?? task.priority;
 
-    // Query
     await pool.query("UPDATE tasks SET title = ?, status = ?, priority = ? WHERE id = ?", [updatedTitle, updatedStatus, updatedPriority, id]);
 
     // Recupero la task aggiornata
-    const [rows] = await pool.query("SELECT * FROM tasks WHERE id = ?", [id]);
+    const updatedTask = await findTaskById(id);
 
     res.json({
       success: true,
-      data: rows[0],
+      data: updateTask,
     });
   } catch (error) {
     next(error);
@@ -119,11 +121,11 @@ export async function deleteTask(req, res, next) {
     const { id } = req.params;
 
     // Controllo se la task esiste
-    const [existing] = await pool.query("SELECT id FROM tasks WHERE id = ?", [id]);
+    const task = await findTaskById(id);
 
     // Validazione
-    if (existing.length === 0) {
-      return res.status(400).json({
+    if (!task) {
+      return res.status(404).json({
         success: false,
         message: "Task non trovata",
       });
