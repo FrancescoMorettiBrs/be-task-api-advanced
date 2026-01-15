@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import pool from "./db/connection.js";
+import taskRoutes from "./routes/tasks.routes.js";
 
 const app = express();
 const PORT = process.env.PORT;
@@ -24,6 +25,8 @@ app.get("/", (req, res) => {
 });
 
 testConnessioneDB();
+
+app.use("/tasks", taskRoutes);
 
 // Avvio del server
 app.listen(PORT, () => {
