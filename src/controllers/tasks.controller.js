@@ -38,3 +38,30 @@ export async function getTaskById(req, res, next) {
     next(err);
   }
 }
+
+export async function createTask(req, res, next) {
+  try {
+    const { title, status = "todo", priority = "medium" } = req.body;
+
+    // Validazione
+    if (!title || title.trim() === "") {
+      return res.status(400).json({
+        success: false,
+        message: "Il campo 'title' è obbligatorio",
+      });
+    }
+
+    // Query
+    const [result] = await pool.query("INSERT INTO tasks (title, status, priority) VALUES (?, ?, ?)", [title.trim(), status, priority]);
+
+    // Recupero la task che ho creato
+    const [rows] = await pool.query("SELECT * FROM tasks WHERE id = ?", [result.insertId]);
+
+    res.status(201).json({
+      success: true,
+      data: rows[0],
+    });
+  } catch (error) {
+    next(error);
+  }
+}
