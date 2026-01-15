@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import pool from "./db/connection.js";
 import taskRoutes from "./routes/tasks.routes.js";
+import notFound from "./middlewares/notFound.js";
+import errorHandler from "./middlewares/errorHandler.js";
 
 const app = express();
 const PORT = process.env.PORT;
@@ -28,7 +30,13 @@ testConnessioneDB();
 
 app.use("/tasks", taskRoutes);
 
+// Middlewares
+app.use(notFound);
+app.use(errorHandler);
+
 // Avvio del server
 app.listen(PORT, () => {
   console.log(`Server avviato su http://localhost:${PORT}`);
 });
+
+
